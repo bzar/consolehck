@@ -69,7 +69,7 @@ void consolehckConsoleUpdate(consolehckConsole* console)
    * If wrapping is required, find the last non-rendered wrap-line within the line and render them
    * until the entire line is rendered.
    */
-  unsigned int const numVisibleLines = height / console->fontSize;
+  unsigned int const numVisibleLines = height / console->fontSize + (height % console->fontSize == 0 ? 0 : 1);
   unsigned int lineStart = console->output.text->length;
   unsigned int lineLength = 0;
   unsigned int currentLine = 1;
@@ -102,7 +102,6 @@ void consolehckConsoleUpdate(consolehckConsole* console)
     if(maxv.x <= width)
     {
       // No wrapping required
-      printf("-- %i: %s\n\n", currentLine, line);
       float lineY = height - currentLine * console->fontSize;
       glhckTextStash(console->text, console->fontId, console->fontSize, 0, lineY, line, 0);
       ++currentLine;
@@ -113,7 +112,7 @@ void consolehckConsoleUpdate(consolehckConsole* console)
       consolehckStringBuffer* const buffer = consolehckStringBufferNew(lineLength);
 
       // Until all wrap-lines rendered
-      while(lineLength > 0)
+      while(numVisibleLines > currentLine && lineLength > 0)
       {
         // Find the last non-rendered wrap-line
         unsigned int linePosition;
@@ -131,7 +130,6 @@ void consolehckConsoleUpdate(consolehckConsole* console)
 
         // Render wrap-line
         float const lineY = height - currentLine * console->fontSize;
-        printf("-- %i: %s\n\n", currentLine, buffer->data);
         glhckTextStash(console->text, console->fontId, console->fontSize, 0, lineY, buffer->data, NULL);
         ++currentLine;
         lineLength -= buffer->length;
@@ -276,7 +274,7 @@ consolehckStringBuffer* consolehckStringBufferCopy(consolehckStringBuffer const*
 void consolehckStringBufferResize(consolehckStringBuffer* buffer, unsigned int const newSize)
 {
   unsigned int const oldLength = buffer->length;
-  char const* const oldData = buffer->data;
+  char* oldData = buffer->data;
 
   buffer->data = calloc(newSize, 1);
   buffer->bufferSize = newSize;
