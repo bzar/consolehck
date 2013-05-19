@@ -186,6 +186,11 @@ void consolehckConsoleOutputUnicodeString(consolehckConsole* console, unsigned i
   consolehckStringBufferPushUnicodeString(console->output.text, c);
 }
 
+void consolehckConsoleInputClear(consolehckConsole* console)
+{
+  consolehckStringBufferClear(console->input.input);
+}
+
 void consolehckConsoleInputChar(consolehckConsole* console, char const c)
 {
   consolehckStringBufferPushChar(console->input.input, c);
@@ -220,12 +225,23 @@ void consolehckConsolePropmtUnicode(consolehckConsole* console, unsigned int con
 
 void consolehckConsoleInputEnter(consolehckConsole* console)
 {
-
+  unsigned int i;
+  for(i = 0; i < console->numInputCallbacks; ++i)
+  {
+    (console->inputCallbacks[i])(console, console->input.input->data);
+  }
 }
 
 void consolehckConsoleInputCallbackRegister(consolehckConsole* console, consolehckInputCallback callback)
 {
-
+  consolehckInputCallback* old = console->inputCallbacks;
+  console->inputCallbacks = calloc(console->numInputCallbacks + 1, sizeof(consolehckInputCallback));
+  if(old != NULL)
+  {
+    memccpy(console->inputCallbacks, old, console->numInputCallbacks, sizeof(consolehckInputCallback));
+  }
+  console->inputCallbacks[console->numInputCallbacks] = callback;
+  console->numInputCallbacks += 1;
 }
 
 consolehckStringBuffer* consolehckStringBufferNew(unsigned int const initialSize)

@@ -46,6 +46,7 @@ void consolehckConsoleOutputUnicodeChar(consolehckConsole* console, unsigned int
 void consolehckConsoleOutputString(consolehckConsole* console, char const* c);
 void consolehckConsoleOutputUnicodeString(consolehckConsole* console, unsigned int const* c);
 
+void consolehckConsoleInputClear(consolehckConsole* console);
 void consolehckConsoleInputChar(consolehckConsole* console, char const c);
 void consolehckConsoleInputUnicodeChar(consolehckConsole* console, unsigned int const c);
 void consolehckConsoleInputString(consolehckConsole* console, char const* c);

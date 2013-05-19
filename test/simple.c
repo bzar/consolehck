@@ -14,16 +14,25 @@ static void windowCloseCallback(GLFWwindow* w)
 static void windowCharCallback(GLFWwindow* w, unsigned int c)
 {
   consolehckConsole* console = glfwGetWindowUserPointer(w);
+  consolehckConsoleInputUnicodeChar(console, c);
+  consolehckConsoleUpdate(console);
+}
 
-  if(c == GLFW_KEY_ENTER)
+static void windowKeyCallback(GLFWwindow* w, int key, int action)
+{
+  consolehckConsole* console = glfwGetWindowUserPointer(w);
+  if(key == GLFW_KEY_ENTER && action == GLFW_PRESS)
   {
     consolehckConsoleInputEnter(console);
+    consolehckConsoleUpdate(console);
   }
-  else
-  {
-    consolehckConsoleInputUnicodeChar(console, c);
-  }
+}
 
+static void inputEnterCallback(consolehckConsole* console, char const* c)
+{
+  consolehckConsoleOutputChar(console, '\n');
+  consolehckConsoleOutputString(console, c);
+  consolehckConsoleInputClear(console);
   consolehckConsoleUpdate(console);
 }
 
@@ -65,6 +74,8 @@ void run(GLFWwindow* window)
   glfwSetWindowUserPointer(window, console);
   glfwSetWindowCloseCallback(window, windowCloseCallback);
   glfwSetCharCallback(window, windowCharCallback);
+  glfwSetKeyCallback(window, windowKeyCallback);
+  consolehckConsoleInputCallbackRegister(console, inputEnterCallback);
 
   glhckObjectPositionf(console->object, WIDTH/2.0f, HEIGHT/2.0f, 0);
 
