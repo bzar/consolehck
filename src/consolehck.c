@@ -75,9 +75,10 @@ void consolehckConsoleUpdate(consolehckConsole* console)
   unsigned int currentLine = 1;
   while(numVisibleLines > currentLine && lineStart > 0)
   {
-    // Find the next line of text in raw char data
     lineLength = 0;
     --lineStart;
+
+    // Find the next line of text in raw char data
     while(lineStart > 0 && console->output.text->data[lineStart - 1] != '\n')
     {
       --lineStart;

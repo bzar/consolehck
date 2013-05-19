@@ -30,8 +30,8 @@ static void windowKeyCallback(GLFWwindow* w, int key, int action)
 
 static void inputEnterCallback(consolehckConsole* console, char const* c)
 {
-  consolehckConsoleOutputChar(console, '\n');
   consolehckConsoleOutputString(console, c);
+  consolehckConsoleOutputChar(console, '\n');
   consolehckConsoleInputClear(console);
   consolehckConsoleUpdate(console);
 }
@@ -84,6 +84,7 @@ void run(GLFWwindow* window)
   consolehckConsoleOutputString(console, "1 Hello Output!\n");
   consolehckConsoleOutputString(console, "2 Hello Output!\n3 Hello Output!\n");
   consolehckConsoleOutputString(console, LOREM_IPSUM);
+  consolehckConsoleOutputChar(console, '\n');
   consolehckConsoleUpdate(console);
 
   kmMat4 ortho;
