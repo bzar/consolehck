@@ -5,7 +5,7 @@
 
 consolehckConsole* consolehckConsoleNew(float const width, float const height)
 {
-  consolehckConsole* console = malloc(sizeof(consolehckConsole));
+  consolehckConsole* console = calloc(1, sizeof(consolehckConsole));
 
   console->input.input = consolehckStringBufferNew(128);
   console->input.prompt = consolehckStringBufferNew(16);
@@ -47,13 +47,13 @@ void consolehckConsoleUpdate(consolehckConsole* console)
   int width, height;
   glhckTextureGetInformation(consoleTexture, NULL, &width, &height, NULL, NULL, NULL, NULL);
 
-  glhckFramebuffer* frameBuffer = glhckFramebufferNew(GLHCK_FRAMEBUFFER_DRAW);
+  glhckFramebuffer* const frameBuffer = glhckFramebufferNew(GLHCK_FRAMEBUFFER_DRAW);
   glhckFramebufferRecti(frameBuffer, 0, 0, width, height);
   glhckFramebufferAttachTexture(frameBuffer, consoleTexture, GLHCK_COLOR_ATTACHMENT0);
 
   glhckFramebufferBegin(frameBuffer);
 
-  glhckColorb previousClearColor = *glhckRenderGetClearColor();
+  glhckColorb const previousClearColor = *glhckRenderGetClearColor();
   glhckRenderClearColorb(64, 64, 64, 255);
   glhckRenderClear(GLHCK_COLOR_BUFFER);
   glhckRenderClearColor(&previousClearColor);
@@ -63,18 +63,18 @@ void consolehckConsoleUpdate(consolehckConsole* console)
    * If wrapping is required, find the last non-rendered wrap-line within the line and render them
    * until the entire line is rendered.
    */
-  unsigned int numVisibleLines = height / console->fontSize;
-  unsigned int linePosition = console->output.text->length;
+  unsigned int const numVisibleLines = height / console->fontSize;
+  unsigned int lineStart = console->output.text->length;
   unsigned int lineLength = 0;
   unsigned int currentLine = 1;
-  while(numVisibleLines > currentLine && linePosition > 0)
+  while(numVisibleLines > currentLine && lineStart > 0)
   {
     // Find the next line of text in raw char data
     lineLength = 0;
-    --linePosition;
-    while(linePosition > 0 && console->output.text->data[linePosition - 1] != '\n')
+    --lineStart;
+    while(lineStart > 0 && console->output.text->data[lineStart - 1] != '\n')
     {
-      --linePosition;
+      --lineStart;
       ++lineLength;
     }
 
@@ -86,8 +86,8 @@ void consolehckConsoleUpdate(consolehckConsole* console)
     }
 
     // Copy line to a null-terminated char array for processing
-    char* line = malloc(lineLength + 1);
-    memcpy(line, console->output.text->data + linePosition, lineLength);
+    char* const line = calloc(lineLength + 1, 1);
+    memcpy(line, console->output.text->data + lineStart, lineLength);
     line[lineLength] = '\0';
 
     kmVec2 minv, maxv;
@@ -99,36 +99,34 @@ void consolehckConsoleUpdate(consolehckConsole* console)
       printf("-- %i: %s\n\n", currentLine, line);
       float lineY = height - currentLine * console->fontSize;
       glhckTextStash(console->text, console->fontId, console->fontSize, 0, lineY, line, 0);
-      glhckTextRender(console->text);
       ++currentLine;
     }
     else
     {
       // Wrapping required
-      consolehckStringBuffer* buffer = consolehckStringBufferNew(lineLength);
+      consolehckStringBuffer* const buffer = consolehckStringBufferNew(lineLength);
 
       // Until all wrap-lines rendered
       while(lineLength > 0)
       {
         // Find the last non-rendered wrap-line
-        unsigned int i;
-        for(i = 0; i < lineLength; ++i)
+        unsigned int linePosition;
+        for(linePosition = 0; linePosition < lineLength; ++linePosition)
         {
-          consolehckStringBufferPushChar(buffer, line[i]);
+          consolehckStringBufferPushChar(buffer, line[linePosition]);
           glhckTextGetMinMax(console->text, console->fontId, console->fontSize, buffer->data, &minv, &maxv);
 
           if(maxv.x > width)
           {
             consolehckStringBufferClear(buffer);
-            --i;
+            --linePosition;
           }
         }
 
         // Render wrap-line
-        float lineY = height - currentLine * console->fontSize;
+        float const lineY = height - currentLine * console->fontSize;
         printf("-- %i: %s\n\n", currentLine, buffer->data);
         glhckTextStash(console->text, console->fontId, console->fontSize, 0, lineY, buffer->data, NULL);
-        glhckTextRender(console->text);
         ++currentLine;
         lineLength -= buffer->length;
         consolehckStringBufferClear(buffer);
@@ -139,6 +137,13 @@ void consolehckConsoleUpdate(consolehckConsole* console)
 
     free(line);
   }
+
+  float promptRight;
+  float const inputY = height;
+  glhckTextStash(console->text, console->fontId, console->fontSize, 0, inputY, console->input.prompt->data, &promptRight);
+  glhckTextStash(console->text, console->fontId, console->fontSize, promptRight, inputY, console->input.input->data, NULL);
+
+  glhckTextRender(console->text);
 
   glhckFramebufferEnd(frameBuffer);
   glhckFramebufferFree(frameBuffer);
@@ -166,6 +171,12 @@ void consolehckConsoleInputString(consolehckConsole* console, char const* c)
   consolehckStringBufferPushString(console->input.input, c);
 }
 
+void consolehckConsoleInputPropmt(consolehckConsole* console, char const* c)
+{
+  consolehckStringBufferClear(console->input.prompt);
+  consolehckStringBufferPushString(console->input.prompt, c);
+}
+
 
 void consolehckConsoleInputEnter(consolehckConsole* console)
 {
@@ -179,9 +190,9 @@ void consolehckConsoleInputCallbackRegister(consolehckConsole* console, consoleh
 
 consolehckStringBuffer* consolehckStringBufferNew(unsigned int const initialSize)
 {
-  consolehckStringBuffer* buffer = malloc(sizeof(consolehckStringBuffer));
+  consolehckStringBuffer* const buffer = calloc(1, sizeof(consolehckStringBuffer));
   buffer->bufferSize = initialSize;
-  buffer->data = malloc(buffer->bufferSize);
+  buffer->data = calloc(buffer->bufferSize, 1);
   memset(buffer->data, 0, buffer->bufferSize);
   buffer->length = 0;
 
@@ -199,7 +210,7 @@ void consolehckStringBufferFree(consolehckStringBuffer* buffer)
 
 consolehckStringBuffer* consolehckStringBufferCopy(consolehckStringBuffer const* buffer)
 {
-  consolehckStringBuffer* copy = consolehckStringBufferNew(buffer->bufferSize);
+  consolehckStringBuffer* const copy = consolehckStringBufferNew(buffer->bufferSize);
   memcpy(copy->data, buffer->data, buffer->length);
   copy->length = buffer->length;
 
@@ -208,10 +219,10 @@ consolehckStringBuffer* consolehckStringBufferCopy(consolehckStringBuffer const*
 
 void consolehckStringBufferResize(consolehckStringBuffer* buffer, unsigned int const newSize)
 {
-  unsigned int oldLength = buffer->length;
-  char* oldData = buffer->data;
+  unsigned int const oldLength = buffer->length;
+  char const* const oldData = buffer->data;
 
-  buffer->data = malloc(newSize);
+  buffer->data = calloc(newSize, 1);
   buffer->bufferSize = newSize;
   buffer->length = newSize > oldLength ? oldLength : newSize - 1;
 
@@ -240,7 +251,7 @@ void consolehckStringBufferPushChar(consolehckStringBuffer* buffer, char const c
 
 void consolehckStringBufferPushString(consolehckStringBuffer* buffer, char const* c)
 {
-  int num = strlen(c);
+  int const num = strlen(c);
   if(buffer->bufferSize <= buffer->length + num)
   {
     unsigned int newSize = buffer->bufferSize;
@@ -264,7 +275,7 @@ char consolehckStringBufferPopChar(consolehckStringBuffer* buffer)
   }
 
   buffer->length -= 1;
-  char result = buffer->data[buffer->length];
+  char const result = buffer->data[buffer->length];
   buffer->data[buffer->length] = '\0';
 
   return result;

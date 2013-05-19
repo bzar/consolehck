@@ -45,6 +45,8 @@ void consolehckConsoleOutputString(consolehckConsole* console, char const* c);
 void consolehckConsoleInputChar(consolehckConsole* console, char const c);
 void consolehckConsoleInputString(consolehckConsole* console, char const* c);
 
+void consolehckConsoleInputPropmt(consolehckConsole* console, char const* c);
+
 void consolehckConsoleInputEnter(consolehckConsole* console);
 void consolehckConsoleInputCallbackRegister(consolehckConsole* console, consolehckInputCallback callback);
 
