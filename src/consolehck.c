@@ -1,9 +1,13 @@
 #include "consolehck.h"
+#include "utf8.h"
+
 #include <stdlib.h>
 #include <memory.h>
 #include <stdio.h>
 
-consolehckConsole* consolehckConsoleNew(float const width, float const height)
+unsigned int const UTF8_MAX_CHARS = 4;
+
+consolehckConsole* consolehckConsoleNew(float const width, float const height, char const* const fontFilename)
 {
   consolehckConsole* console = calloc(1, sizeof(consolehckConsole));
 
@@ -24,7 +28,7 @@ consolehckConsole* consolehckConsoleNew(float const width, float const height)
 
   console->text = glhckTextNew(1024,1024);
   glhckTextColorb(console->text, 192, 192, 192, 255);
-  console->fontId = glhckTextNewFont(console->text, "test/fonts/DejaVuSans.ttf");
+  console->fontId = glhckTextNewFont(console->text, fontFilename);
   console->fontSize = 14;
 
   return console;
@@ -57,6 +61,8 @@ void consolehckConsoleUpdate(consolehckConsole* console)
   glhckRenderClearColorb(64, 64, 64, 255);
   glhckRenderClear(GLHCK_COLOR_BUFFER);
   glhckRenderClearColor(&previousClearColor);
+
+  glhckTextClear(console->text);
 
   /* Work through the character data backwards and find newline-separated lines.
    * For each line determine if wrapping is required. If no wrapping is required, render the line.
@@ -149,10 +155,25 @@ void consolehckConsoleUpdate(consolehckConsole* console)
   glhckFramebufferFree(frameBuffer);
 }
 
+void consolehckConsoleFont(consolehckConsole* console, char const* filename)
+{
+  console->fontId = glhckTextNewFont(console->text, filename);
+}
+
+void consolehckConsoleFontSize(consolehckConsole* console, unsigned int const fontSize)
+{
+  console->fontSize = fontSize;
+}
+
 
 void consolehckConsoleOutputChar(consolehckConsole* console, char const c)
 {
   consolehckStringBufferPushChar(console->output.text, c);
+}
+
+void consolehckConsoleOutputUnicodeChar(consolehckConsole* console, unsigned int const c)
+{
+  consolehckStringBufferPushUnicodeChar(console->output.text, c);
 }
 
 void consolehckConsoleOutputString(consolehckConsole* console, char const* c)
@@ -160,15 +181,29 @@ void consolehckConsoleOutputString(consolehckConsole* console, char const* c)
   consolehckStringBufferPushString(console->output.text, c);
 }
 
+void consolehckConsoleOutputUnicodeString(consolehckConsole* console, unsigned int const* c)
+{
+  consolehckStringBufferPushUnicodeString(console->output.text, c);
+}
 
 void consolehckConsoleInputChar(consolehckConsole* console, char const c)
 {
   consolehckStringBufferPushChar(console->input.input, c);
 }
 
+void consolehckConsoleInputUnicodeChar(consolehckConsole* console, unsigned int const c)
+{
+  consolehckStringBufferPushUnicodeChar(console->input.input, c);
+}
+
 void consolehckConsoleInputString(consolehckConsole* console, char const* c)
 {
   consolehckStringBufferPushString(console->input.input, c);
+}
+
+void consolehckConsoleInputUnicodeString(consolehckConsole* console, unsigned int const* c)
+{
+  consolehckStringBufferPushUnicodeString(console->input.input, c);
 }
 
 void consolehckConsoleInputPropmt(consolehckConsole* console, char const* c)
@@ -177,6 +212,11 @@ void consolehckConsoleInputPropmt(consolehckConsole* console, char const* c)
   consolehckStringBufferPushString(console->input.prompt, c);
 }
 
+void consolehckConsolePropmtUnicode(consolehckConsole* console, unsigned int const* c)
+{
+  consolehckStringBufferClear(console->input.prompt);
+  consolehckStringBufferPushUnicodeString(console->input.prompt, c);
+}
 
 void consolehckConsoleInputEnter(consolehckConsole* console)
 {
@@ -249,6 +289,14 @@ void consolehckStringBufferPushChar(consolehckStringBuffer* buffer, char const c
   buffer->data[buffer->length] = '\0';
 }
 
+void consolehckStringBufferPushUnicodeChar(consolehckStringBuffer* buffer, unsigned int const c)
+{
+  char chars[UTF8_MAX_CHARS + 1];
+  int numChars = utf8Encode(c, chars, UTF8_MAX_CHARS);
+  chars[numChars] = '\0';
+  consolehckStringBufferPushString(buffer, chars);
+}
+
 void consolehckStringBufferPushString(consolehckStringBuffer* buffer, char const* c)
 {
   int const num = strlen(c);
@@ -265,6 +313,29 @@ void consolehckStringBufferPushString(consolehckStringBuffer* buffer, char const
   memcpy(buffer->data + buffer->length, c, num);
   buffer->length += num;
   buffer->data[buffer->length] = '\0';
+}
+
+void consolehckStringBufferPushUnicodeString(consolehckStringBuffer* buffer, unsigned int const* c)
+{
+  unsigned int const* p = c;
+  unsigned int encodedLength = 0;
+  while(*p != 0)
+  {
+    encodedLength += utf8EncodedLength(*p);
+    ++p;
+  }
+
+  char* const chars = calloc(encodedLength, 1);
+
+  p = c;
+  unsigned int pos = 0;
+  while(*p != 0)
+  {
+    pos += utf8Encode(*p, chars + pos, UTF8_MAX_CHARS);
+    ++p;
+  }
+
+  consolehckStringBufferPushString(buffer, chars);
 }
 
 char consolehckStringBufferPopChar(consolehckStringBuffer* buffer)

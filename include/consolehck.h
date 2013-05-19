@@ -34,18 +34,25 @@ typedef struct consolehckConsole {
   glhckObject* object;
 } consolehckConsole;
 
-consolehckConsole* consolehckConsoleNew(float const width, float const height);
+consolehckConsole* consolehckConsoleNew(float const width, float const height, char const* const fontFilename);
 void consolehckConsoleFree(consolehckConsole* console);
 
 void consolehckConsoleUpdate(consolehckConsole* console);
+void consolehckConsoleFont(consolehckConsole* console, char const* filename);
+void consolehckConsoleFontSize(consolehckConsole* console, const unsigned int fontSize);
 
 void consolehckConsoleOutputChar(consolehckConsole* console, char const c);
+void consolehckConsoleOutputUnicodeChar(consolehckConsole* console, unsigned int const c);
 void consolehckConsoleOutputString(consolehckConsole* console, char const* c);
+void consolehckConsoleOutputUnicodeString(consolehckConsole* console, unsigned int const* c);
 
 void consolehckConsoleInputChar(consolehckConsole* console, char const c);
+void consolehckConsoleInputUnicodeChar(consolehckConsole* console, unsigned int const c);
 void consolehckConsoleInputString(consolehckConsole* console, char const* c);
+void consolehckConsoleInputUnicodeString(consolehckConsole* console, unsigned int const* c);
 
-void consolehckConsoleInputPropmt(consolehckConsole* console, char const* c);
+void consolehckConsolePropmt(consolehckConsole* console, char const* c);
+void consolehckConsolePropmtUnicode(consolehckConsole* console, unsigned int const* c);
 
 void consolehckConsoleInputEnter(consolehckConsole* console);
 void consolehckConsoleInputCallbackRegister(consolehckConsole* console, consolehckInputCallback callback);
@@ -58,7 +65,9 @@ void consolehckStringBufferResize(consolehckStringBuffer *buffer, unsigned int c
 void consolehckStringBufferClear(consolehckStringBuffer *buffer);
 
 void consolehckStringBufferPushChar(consolehckStringBuffer* buffer, char const c);
+void consolehckStringBufferPushUnicodeChar(consolehckStringBuffer* buffer, unsigned int const c);
 void consolehckStringBufferPushString(consolehckStringBuffer* buffer, char const* c);
+void consolehckStringBufferPushUnicodeString(consolehckStringBuffer* buffer, unsigned int const* c);
 char consolehckStringBufferPopChar(consolehckStringBuffer* buffer);
 
 
