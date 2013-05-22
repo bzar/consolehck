@@ -239,12 +239,12 @@ void consolehckConsoleInputUnicodeString(consolehckConsole* console, unsigned in
 
 char consolehckConsoleInputPopChar(consolehckConsole* console)
 {
-  return consolehckStringBufferPopChar(console);
+  return consolehckStringBufferPopChar(console->input.input);
 }
 
 unsigned int consolehckConsoleInputPopUnicodeChar(consolehckConsole* console)
 {
-  return consolehckStringBufferPopUnicodeChar(console);
+  return consolehckStringBufferPopUnicodeChar(console->input.input);
 }
 
 void consolehckConsoleInputPropmt(consolehckConsole* console, char const* c)

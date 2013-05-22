@@ -30,7 +30,7 @@ static void windowKeyCallback(GLFWwindow* w, int key, int action)
     }
     else if(key == GLFW_KEY_BACKSPACE)
     {
-      //consolehckConsoleInputPopUnicodeChar(console);
+      consolehckConsoleInputPopUnicodeChar(console);
       consolehckConsoleUpdate(console);
     }
   }
