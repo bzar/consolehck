@@ -21,16 +21,24 @@ static void windowCharCallback(GLFWwindow* w, unsigned int c)
 static void windowKeyCallback(GLFWwindow* w, int key, int action)
 {
   consolehckConsole* console = glfwGetWindowUserPointer(w);
-  if(key == GLFW_KEY_ENTER && action == GLFW_PRESS)
+  if(action == GLFW_PRESS)
   {
-    consolehckConsoleInputEnter(console);
-    consolehckConsoleUpdate(console);
+    if(key == GLFW_KEY_ENTER)
+    {
+      consolehckConsoleInputEnter(console);
+      consolehckConsoleUpdate(console);
+    }
+    else if(key == GLFW_KEY_BACKSPACE)
+    {
+      //consolehckConsoleInputPopUnicodeChar(console);
+      consolehckConsoleUpdate(console);
+    }
   }
 }
 
-static void inputEnterCallback(consolehckConsole* console, char const* c)
+static void inputEnterCallback(consolehckConsole* console, unsigned int const* c)
 {
-  consolehckConsoleOutputString(console, c);
+  consolehckConsoleOutputUnicodeString(console, c);
   consolehckConsoleOutputChar(console, '\n');
   consolehckConsoleInputClear(console);
   consolehckConsoleUpdate(console);
@@ -70,7 +78,7 @@ int main(int argc, char** argv)
 
 void run(GLFWwindow* window)
 {
-  consolehckConsole* console = consolehckConsoleNew(512, 256, "test/fonts/DejaVuSansMono.ttf");
+  consolehckConsole* console = consolehckConsoleNew(512, 256);
   glfwSetWindowUserPointer(window, console);
   glfwSetWindowCloseCallback(window, windowCloseCallback);
   glfwSetCharCallback(window, windowCharCallback);
@@ -79,7 +87,7 @@ void run(GLFWwindow* window)
 
   glhckObjectPositionf(console->object, WIDTH/2.0f, HEIGHT/2.0f, 0);
 
-  consolehckConsoleInputPropmt(console, "consolehck> ");
+  consolehckConsoleInputPropmt(console, "consolehck>");
   consolehckConsoleInputString(console, "Hello Input!");
   consolehckConsoleOutputString(console, "1 Hello Output!\n");
   consolehckConsoleOutputString(console, "2 Hello Output!\n3 Hello Output!\n");

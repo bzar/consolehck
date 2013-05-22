@@ -7,7 +7,10 @@
 
 unsigned int const UTF8_MAX_CHARS = 4;
 
-consolehckConsole* consolehckConsoleNew(float const width, float const height, char const* const fontFilename)
+
+
+
+consolehckConsole* consolehckConsoleNew(float const width, float const height)
 {
   consolehckConsole* console = calloc(1, sizeof(consolehckConsole));
 
@@ -28,8 +31,9 @@ consolehckConsole* consolehckConsoleNew(float const width, float const height, c
 
   console->text = glhckTextNew(1024,1024);
   glhckTextColorb(console->text, 192, 192, 192, 255);
-  console->fontId = glhckTextNewFont(console->text, fontFilename);
   console->fontSize = 14;
+  console->fontId = glhckTextNewFontKakwafont(console->text, &console->fontSize);
+  console->margin = 4;
 
   return console;
 }
@@ -69,7 +73,7 @@ void consolehckConsoleUpdate(consolehckConsole* console)
    * If wrapping is required, find the last non-rendered wrap-line within the line and render them
    * until the entire line is rendered.
    */
-  unsigned int const numVisibleLines = height / console->fontSize + (height % console->fontSize == 0 ? 0 : 1);
+  unsigned int const numVisibleLines = (height - console->margin) / console->fontSize + 1;
   unsigned int lineStart = console->output.text->length;
   unsigned int lineLength = 0;
   unsigned int currentLine = 1;
@@ -92,61 +96,84 @@ void consolehckConsoleUpdate(consolehckConsole* console)
       continue;
     }
 
-    // Copy line to a null-terminated char array for processing
-    char* const line = calloc(lineLength + 1, 1);
-    memcpy(line, console->output.text->data + lineStart, lineLength);
-    line[lineLength] = '\0';
+    // Copy line to a null-terminated unicode array for processing
+    unsigned int* const line = calloc(lineLength + 1, sizeof(unsigned int));
+    memcpy(line, console->output.text->data + lineStart, lineLength * sizeof(unsigned int));
+    line[lineLength] = 0;
+    int utf8LineLength = utf8EncodedStringLength(line);
+    char* const utf8Line = calloc(utf8LineLength + 1, 1);
+    utf8EncodeString(line, utf8Line);
+    utf8Line[utf8LineLength] = 0;
 
     kmVec2 minv, maxv;
-    glhckTextGetMinMax(console->text, console->fontId, console->fontSize, line, &minv, &maxv);
+    glhckTextGetMinMax(console->text, console->fontId, console->fontSize, utf8Line, &minv, &maxv);
 
     if(maxv.x <= width)
     {
       // No wrapping required
-      float lineY = height - currentLine * console->fontSize;
-      glhckTextStash(console->text, console->fontId, console->fontSize, 0, lineY, line, 0);
+      float lineY = height - console->margin - currentLine * console->fontSize;
+
+      glhckTextStash(console->text, console->fontId, console->fontSize, console->margin, lineY, utf8Line, 0);
       ++currentLine;
     }
     else
     {
-      // Wrapping required
-      consolehckStringBuffer* const buffer = consolehckStringBufferNew(lineLength);
-
       // Until all wrap-lines rendered
       while(numVisibleLines > currentLine && lineLength > 0)
       {
         // Find the last non-rendered wrap-line
         unsigned int linePosition;
+        unsigned int wrapLineLength = 0;
+        unsigned int utf8WrapLineLength = 0;
+        unsigned int utf8WrapLineStart = 0;
+        char* const utf8WrapLine = calloc(utf8LineLength + 1, 1);
+
         for(linePosition = 0; linePosition < lineLength; ++linePosition)
         {
-          consolehckStringBufferPushChar(buffer, line[linePosition]);
-          glhckTextGetMinMax(console->text, console->fontId, console->fontSize, buffer->data, &minv, &maxv);
+          int charLength = utf8EncodedLength(line[linePosition]);
+          memcpy(utf8WrapLine + utf8WrapLineLength, utf8Line + utf8WrapLineStart + utf8WrapLineLength, charLength);
+          utf8WrapLineLength += charLength;
+          ++wrapLineLength;
 
-          if(maxv.x > width)
+          glhckTextGetMinMax(console->text, console->fontId, console->fontSize, utf8WrapLine, &minv, &maxv);
+
+          if(maxv.x > width - console->margin * 2)
           {
-            consolehckStringBufferClear(buffer);
+            memset(utf8WrapLine, 0, utf8WrapLineLength);
+            utf8WrapLineStart += utf8WrapLineLength;
+            utf8WrapLineLength = 0;
+            wrapLineLength = 0;
             --linePosition;
           }
         }
 
         // Render wrap-line
-        float const lineY = height - currentLine * console->fontSize;
-        glhckTextStash(console->text, console->fontId, console->fontSize, 0, lineY, buffer->data, NULL);
+        float const lineY = height - console->margin - currentLine * console->fontSize;
+        glhckTextStash(console->text, console->fontId, console->fontSize, console->margin, lineY, utf8WrapLine, NULL);
         ++currentLine;
-        lineLength -= buffer->length;
-        consolehckStringBufferClear(buffer);
+        lineLength -= wrapLineLength;
+        free(utf8WrapLine);
       }
-
-      consolehckStringBufferFree(buffer);
     }
 
     free(line);
+    free(utf8Line);
   }
 
+  float const inputY = height - console->margin;
   float promptRight;
-  float const inputY = height;
-  glhckTextStash(console->text, console->fontId, console->fontSize, 0, inputY, console->input.prompt->data, &promptRight);
-  glhckTextStash(console->text, console->fontId, console->fontSize, promptRight, inputY, console->input.input->data, NULL);
+
+  int utf8PromptLength = utf8EncodedStringLength(console->input.prompt->data);
+  char* utf8Prompt = calloc(utf8PromptLength, 1);
+  utf8EncodeString(console->input.prompt->data, utf8Prompt);
+  glhckTextStash(console->text, console->fontId, console->fontSize, console->margin, inputY, utf8Prompt, &promptRight);
+  free(utf8Prompt);
+
+  int utf8InputLength = utf8EncodedStringLength(console->input.input->data);
+  char* utf8Input = calloc(utf8InputLength, 1);
+  utf8EncodeString(console->input.input->data, utf8Input);
+  glhckTextStash(console->text, console->fontId, console->fontSize, promptRight, inputY, utf8Input, NULL);
+  free(utf8Input);
 
   glhckTextRender(console->text);
 
@@ -210,6 +237,16 @@ void consolehckConsoleInputUnicodeString(consolehckConsole* console, unsigned in
   consolehckStringBufferPushUnicodeString(console->input.input, c);
 }
 
+char consolehckConsoleInputPopChar(consolehckConsole* console)
+{
+  return consolehckStringBufferPopChar(console);
+}
+
+unsigned int consolehckConsoleInputPopUnicodeChar(consolehckConsole* console)
+{
+  return consolehckStringBufferPopUnicodeChar(console);
+}
+
 void consolehckConsoleInputPropmt(consolehckConsole* console, char const* c)
 {
   consolehckStringBufferClear(console->input.prompt);
@@ -237,7 +274,7 @@ void consolehckConsoleInputCallbackRegister(consolehckConsole* console, consoleh
   console->inputCallbacks = calloc(console->numInputCallbacks + 1, sizeof(consolehckInputCallback));
   if(old != NULL)
   {
-    memccpy(console->inputCallbacks, old, console->numInputCallbacks, sizeof(consolehckInputCallback));
+    memcpy(console->inputCallbacks, old, console->numInputCallbacks * sizeof(consolehckInputCallback));
   }
   console->inputCallbacks[console->numInputCallbacks] = callback;
   console->numInputCallbacks += 1;
@@ -247,8 +284,7 @@ consolehckStringBuffer* consolehckStringBufferNew(unsigned int const initialSize
 {
   consolehckStringBuffer* const buffer = calloc(1, sizeof(consolehckStringBuffer));
   buffer->bufferSize = initialSize;
-  buffer->data = calloc(buffer->bufferSize, 1);
-  memset(buffer->data, 0, buffer->bufferSize);
+  buffer->data = calloc(buffer->bufferSize, sizeof(unsigned int));
   buffer->length = 0;
 
   return buffer;
@@ -266,7 +302,7 @@ void consolehckStringBufferFree(consolehckStringBuffer* buffer)
 consolehckStringBuffer* consolehckStringBufferCopy(consolehckStringBuffer const* buffer)
 {
   consolehckStringBuffer* const copy = consolehckStringBufferNew(buffer->bufferSize);
-  memcpy(copy->data, buffer->data, buffer->length);
+  memcpy(copy->data, buffer->data, buffer->length * sizeof(unsigned int));
   copy->length = buffer->length;
 
   return copy;
@@ -275,14 +311,13 @@ consolehckStringBuffer* consolehckStringBufferCopy(consolehckStringBuffer const*
 void consolehckStringBufferResize(consolehckStringBuffer* buffer, unsigned int const newSize)
 {
   unsigned int const oldLength = buffer->length;
-  char* oldData = buffer->data;
+  unsigned int* oldData = buffer->data;
 
-  buffer->data = calloc(newSize, 1);
+  buffer->data = calloc(newSize, sizeof(unsigned int));
   buffer->bufferSize = newSize;
   buffer->length = newSize > oldLength ? oldLength : newSize - 1;
 
-  memset(buffer->data, 0, buffer->bufferSize);
-  memcpy(buffer->data, oldData, buffer->length);
+  memcpy(buffer->data, oldData, buffer->length * sizeof(unsigned int));
   free(oldData);
 }
 
@@ -294,6 +329,14 @@ void consolehckStringBufferClear(consolehckStringBuffer *buffer)
 
 void consolehckStringBufferPushChar(consolehckStringBuffer* buffer, char const c)
 {
+  unsigned int codepoint;
+  unsigned int state = 0;
+  assert(!utf8Decode(&state, &codepoint, c));
+  consolehckStringBufferPushUnicodeChar(buffer, codepoint);
+}
+
+void consolehckStringBufferPushUnicodeChar(consolehckStringBuffer* buffer, unsigned int const c)
+{
   if(buffer->bufferSize <= buffer->length + 1)
   {
     consolehckStringBufferResize(buffer, buffer->bufferSize * 2);
@@ -301,20 +344,22 @@ void consolehckStringBufferPushChar(consolehckStringBuffer* buffer, char const c
 
   buffer->data[buffer->length] = c;
   buffer->length += 1;
-  buffer->data[buffer->length] = '\0';
-}
-
-void consolehckStringBufferPushUnicodeChar(consolehckStringBuffer* buffer, unsigned int const c)
-{
-  char chars[UTF8_MAX_CHARS + 1];
-  int numChars = utf8Encode(c, chars, UTF8_MAX_CHARS);
-  chars[numChars] = '\0';
-  consolehckStringBufferPushString(buffer, chars);
+  buffer->data[buffer->length] = 0;
 }
 
 void consolehckStringBufferPushString(consolehckStringBuffer* buffer, char const* c)
 {
-  int const num = strlen(c);
+  int numCodepoints;
+  utf8CountCodePoints(c, &numCodepoints);
+  unsigned int* codepoints = calloc(numCodepoints + 1, sizeof(unsigned int));
+  utf8DecodeString(c, codepoints);
+  codepoints[numCodepoints] = 0;
+  consolehckStringBufferPushUnicodeString(buffer, codepoints);
+}
+
+void consolehckStringBufferPushUnicodeString(consolehckStringBuffer* buffer, unsigned int const* c)
+{
+  int const num = unicodeStringLength(c);
   if(buffer->bufferSize <= buffer->length + num)
   {
     unsigned int newSize = buffer->bufferSize;
@@ -322,47 +367,37 @@ void consolehckStringBufferPushString(consolehckStringBuffer* buffer, char const
     {
       newSize *= 2;
     }
-    consolehckStringBufferResize(buffer, buffer->bufferSize * 2);
+    consolehckStringBufferResize(buffer, newSize);
   }
 
-  memcpy(buffer->data + buffer->length, c, num);
+  memcpy(buffer->data + buffer->length, c, num * sizeof(unsigned int));
   buffer->length += num;
-  buffer->data[buffer->length] = '\0';
-}
-
-void consolehckStringBufferPushUnicodeString(consolehckStringBuffer* buffer, unsigned int const* c)
-{
-  unsigned int const* p = c;
-  unsigned int encodedLength = 0;
-  while(*p != 0)
-  {
-    encodedLength += utf8EncodedLength(*p);
-    ++p;
-  }
-
-  char* const chars = calloc(encodedLength, 1);
-
-  p = c;
-  unsigned int pos = 0;
-  while(*p != 0)
-  {
-    pos += utf8Encode(*p, chars + pos, UTF8_MAX_CHARS);
-    ++p;
-  }
-
-  consolehckStringBufferPushString(buffer, chars);
+  buffer->data[buffer->length] = 0;
 }
 
 char consolehckStringBufferPopChar(consolehckStringBuffer* buffer)
 {
+  unsigned int const codepoint = consolehckStringBufferPopUnicodeChar(buffer);
+  if(codepoint == 0)
+    return '\0';
+
+  assert(utf8EncodedLength(codepoint) == 1);
+  char c;
+  utf8Encode(codepoint, &c, 1);
+  return c;
+}
+
+unsigned int consolehckStringBufferPopUnicodeChar(consolehckStringBuffer* buffer)
+{
   if(buffer->length == 0)
   {
-    return '\0';
+    return 0;
   }
 
   buffer->length -= 1;
-  char const result = buffer->data[buffer->length];
-  buffer->data[buffer->length] = '\0';
+  unsigned int const result = buffer->data[buffer->length];
+  buffer->data[buffer->length] = 0;
 
   return result;
 }
+

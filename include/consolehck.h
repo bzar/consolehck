@@ -4,10 +4,10 @@
 #include "glhck/glhck.h"
 
 struct consolehckConsole;
-typedef void (* consolehckInputCallback)(struct consolehckConsole*, char const*);
+typedef void (* consolehckInputCallback)(struct consolehckConsole*, unsigned int const*);
 
 typedef struct consolehckStringBuffer {
-  char* data;
+  unsigned int* data;
   unsigned int length;
   unsigned int bufferSize;
 } consolehckStringBuffer;
@@ -30,11 +30,11 @@ typedef struct consolehckConsole {
   glhckText* text;
   unsigned int fontId;
   unsigned int fontSize;
-
+  float margin;
   glhckObject* object;
 } consolehckConsole;
 
-consolehckConsole* consolehckConsoleNew(float const width, float const height, char const* const fontFilename);
+consolehckConsole* consolehckConsoleNew(float const width, float const height);
 void consolehckConsoleFree(consolehckConsole* console);
 
 void consolehckConsoleUpdate(consolehckConsole* console);
@@ -51,6 +51,8 @@ void consolehckConsoleInputChar(consolehckConsole* console, char const c);
 void consolehckConsoleInputUnicodeChar(consolehckConsole* console, unsigned int const c);
 void consolehckConsoleInputString(consolehckConsole* console, char const* c);
 void consolehckConsoleInputUnicodeString(consolehckConsole* console, unsigned int const* c);
+char consolehckConsoleInputPopChar(consolehckConsole* console);
+unsigned int consolehckConsoleInputPopUnicodeChar(consolehckConsole* console);
 
 void consolehckConsolePropmt(consolehckConsole* console, char const* c);
 void consolehckConsolePropmtUnicode(consolehckConsole* console, unsigned int const* c);
@@ -70,6 +72,7 @@ void consolehckStringBufferPushUnicodeChar(consolehckStringBuffer* buffer, unsig
 void consolehckStringBufferPushString(consolehckStringBuffer* buffer, char const* c);
 void consolehckStringBufferPushUnicodeString(consolehckStringBuffer* buffer, unsigned int const* c);
 char consolehckStringBufferPopChar(consolehckStringBuffer* buffer);
+unsigned int consolehckStringBufferPopUnicodeChar(consolehckStringBuffer* buffer);
 
 
 #endif
