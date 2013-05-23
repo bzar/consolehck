@@ -6,6 +6,10 @@
 struct consolehckConsole;
 typedef void (* consolehckInputCallback)(struct consolehckConsole*, unsigned int const*);
 
+typedef enum consolehckWrapMode {
+  CONSOLEHCK_NO_WRAP, CONSOLEHCK_WRAP
+} consolehckWrapMode;
+
 typedef struct consolehckStringBuffer {
   unsigned int* data;
   unsigned int length;
@@ -74,5 +78,6 @@ void consolehckStringBufferPushUnicodeString(consolehckStringBuffer* buffer, uns
 char consolehckStringBufferPopChar(consolehckStringBuffer* buffer);
 unsigned int consolehckStringBufferPopUnicodeChar(consolehckStringBuffer* buffer);
 
+void consolehckTextRenderUnicode(glhckText* textObject, glhckRect const* rect, consolehckWrapMode wrapMode, unsigned int fontId, unsigned int fontSize, unsigned int const* const str);
 
 #endif

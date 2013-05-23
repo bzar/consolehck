@@ -68,109 +68,20 @@ void consolehckConsoleUpdate(consolehckConsole* console)
 
   glhckTextClear(console->text);
 
-  /* Work through the character data backwards and find newline-separated lines.
-   * For each line determine if wrapping is required. If no wrapping is required, render the line.
-   * If wrapping is required, find the last non-rendered wrap-line within the line and render them
-   * until the entire line is rendered.
-   */
-  unsigned int const numVisibleLines = (height - console->margin) / console->fontSize + 1;
-  unsigned int lineStart = console->output.text->length;
-  unsigned int lineLength = 0;
-  unsigned int currentLine = 1;
-  while(numVisibleLines > currentLine && lineStart > 0)
-  {
-    lineLength = 0;
-    --lineStart;
-
-    // Find the next line of text in raw char data
-    while(lineStart > 0 && console->output.text->data[lineStart - 1] != '\n')
-    {
-      --lineStart;
-      ++lineLength;
-    }
-
-    // Skip rendering empty lines
-    if(lineLength == 0)
-    {
-      ++currentLine;
-      continue;
-    }
-
-    // Copy line to a null-terminated unicode array for processing
-    unsigned int* const line = calloc(lineLength + 1, sizeof(unsigned int));
-    memcpy(line, console->output.text->data + lineStart, lineLength * sizeof(unsigned int));
-    line[lineLength] = 0;
-    int utf8LineLength = utf8EncodedStringLength(line);
-    char* const utf8Line = calloc(utf8LineLength + 1, 1);
-    utf8EncodeString(line, utf8Line);
-    utf8Line[utf8LineLength] = 0;
-
-    kmVec2 minv, maxv;
-    glhckTextGetMinMax(console->text, console->fontId, console->fontSize, utf8Line, &minv, &maxv);
-
-    if(maxv.x <= width)
-    {
-      // No wrapping required
-      float lineY = height - console->margin - currentLine * console->fontSize;
-
-      glhckTextStash(console->text, console->fontId, console->fontSize, console->margin, lineY, utf8Line, 0);
-      ++currentLine;
-    }
-    else
-    {
-      // Until all wrap-lines rendered
-      while(numVisibleLines > currentLine && lineLength > 0)
-      {
-        // Find the last non-rendered wrap-line
-        unsigned int linePosition;
-        unsigned int wrapLineLength = 0;
-        unsigned int utf8WrapLineLength = 0;
-        unsigned int utf8WrapLineStart = 0;
-        char* const utf8WrapLine = calloc(utf8LineLength + 1, 1);
-
-        for(linePosition = 0; linePosition < lineLength; ++linePosition)
-        {
-          int charLength = utf8EncodedLength(line[linePosition]);
-          memcpy(utf8WrapLine + utf8WrapLineLength, utf8Line + utf8WrapLineStart + utf8WrapLineLength, charLength);
-          utf8WrapLineLength += charLength;
-          ++wrapLineLength;
-
-          glhckTextGetMinMax(console->text, console->fontId, console->fontSize, utf8WrapLine, &minv, &maxv);
-
-          if(maxv.x > width - console->margin * 2)
-          {
-            memset(utf8WrapLine, 0, utf8WrapLineLength);
-            utf8WrapLineStart += utf8WrapLineLength;
-            utf8WrapLineLength = 0;
-            wrapLineLength = 0;
-            --linePosition;
-          }
-        }
-
-        // Render wrap-line
-        float const lineY = height - console->margin - currentLine * console->fontSize;
-        glhckTextStash(console->text, console->fontId, console->fontSize, console->margin, lineY, utf8WrapLine, NULL);
-        ++currentLine;
-        lineLength -= wrapLineLength;
-        free(utf8WrapLine);
-      }
-    }
-
-    free(line);
-    free(utf8Line);
-  }
+  glhckRect rect = {console->margin, console->margin, width - console->margin * 2, height - console->margin * 2};
+  consolehckTextRenderUnicode(console->text, &rect, CONSOLEHCK_WRAP, console->fontId, console->fontSize, console->output.text->data);
 
   float const inputY = height - console->margin;
   float promptRight;
 
   int utf8PromptLength = utf8EncodedStringLength(console->input.prompt->data);
-  char* utf8Prompt = calloc(utf8PromptLength, 1);
+  char* utf8Prompt = calloc(utf8PromptLength + 1, 1);
   utf8EncodeString(console->input.prompt->data, utf8Prompt);
   glhckTextStash(console->text, console->fontId, console->fontSize, console->margin, inputY, utf8Prompt, &promptRight);
   free(utf8Prompt);
 
   int utf8InputLength = utf8EncodedStringLength(console->input.input->data);
-  char* utf8Input = calloc(utf8InputLength, 1);
+  char* utf8Input = calloc(utf8InputLength + 1, 1);
   utf8EncodeString(console->input.input->data, utf8Input);
   glhckTextStash(console->text, console->fontId, console->fontSize, promptRight, inputY, utf8Input, NULL);
   free(utf8Input);
@@ -401,3 +312,98 @@ unsigned int consolehckStringBufferPopUnicodeChar(consolehckStringBuffer* buffer
   return result;
 }
 
+void consolehckTextRenderUnicode(glhckText* textObject, glhckRect const* rect, consolehckWrapMode wrapMode, unsigned int fontId, unsigned int fontSize, unsigned int const* const str)
+{
+  /* Work through the character data backwards and find newline-separated lines.
+   * For each line determine if wrapping is required. If no wrapping is required, render the line.
+   * If wrapping is required, find the last non-rendered wrap-line within the line and render them
+   * until the entire line is rendered.
+   */
+  unsigned int const numVisibleLines = rect->h / fontSize + 1;
+  unsigned int lineStart = unicodeStringLength(str);
+  unsigned int lineLength = 0;
+  unsigned int currentLine = 1;
+  while(numVisibleLines > currentLine && lineStart > 0)
+  {
+    lineLength = 0;
+    --lineStart;
+
+    // Find the next line of text in raw char data
+    while(lineStart > 0 && str[lineStart - 1] != '\n')
+    {
+      --lineStart;
+      ++lineLength;
+    }
+
+    // Skip rendering empty lines
+    if(lineLength == 0)
+    {
+      ++currentLine;
+      continue;
+    }
+
+    // Copy line to a null-terminated unicode array for processing
+    unsigned int* const line = calloc(lineLength + 1, sizeof(unsigned int));
+    memcpy(line, str + lineStart, lineLength * sizeof(unsigned int));
+    line[lineLength] = 0;
+    int utf8LineLength = utf8EncodedStringLength(line);
+    char* const utf8Line = calloc(utf8LineLength + 1, 1);
+    utf8EncodeString(line, utf8Line);
+    utf8Line[utf8LineLength] = 0;
+
+    kmVec2 minv, maxv;
+    glhckTextGetMinMax(textObject, fontId, fontSize, utf8Line, &minv, &maxv);
+
+    if(maxv.x <= rect->w || wrapMode == CONSOLEHCK_NO_WRAP)
+    {
+      // No wrapping required
+      float lineY = rect->h - currentLine * fontSize;
+
+      glhckTextStash(textObject, fontId, fontSize, rect->x, rect->y + lineY, utf8Line, 0);
+      ++currentLine;
+    }
+    else
+    {
+      // Until all wrap-lines rendered
+      char* const utf8WrapLine = calloc(utf8LineLength + 1, 1);
+      while(numVisibleLines > currentLine && lineLength > 0)
+      {
+        // Find the last non-rendered wrap-line
+        unsigned int linePosition;
+        unsigned int wrapLineLength = 0;
+        unsigned int utf8WrapLineLength = 0;
+        unsigned int utf8WrapLineStart = 0;
+
+        for(linePosition = 0; linePosition < lineLength; ++linePosition)
+        {
+          int charLength = utf8EncodedLength(line[linePosition]);
+          memcpy(utf8WrapLine + utf8WrapLineLength, utf8Line + utf8WrapLineStart + utf8WrapLineLength, charLength);
+          utf8WrapLineLength += charLength;
+          utf8WrapLine[utf8WrapLineLength] = '\0';
+          ++wrapLineLength;
+
+          glhckTextGetMinMax(textObject, fontId, fontSize, utf8WrapLine, &minv, &maxv);
+
+          if(maxv.x > rect->w)
+          {
+            memset(utf8WrapLine, 0, utf8WrapLineLength);
+            utf8WrapLineStart += utf8WrapLineLength - charLength;
+            utf8WrapLineLength = 0;
+            wrapLineLength = 0;
+            --linePosition;
+          }
+        }
+
+        // Render wrap-line
+        float const lineY = rect->h - currentLine * fontSize;
+        glhckTextStash(textObject, fontId, fontSize, rect->x, rect->y + lineY, utf8WrapLine, NULL);
+        ++currentLine;
+        lineLength -= wrapLineLength;
+      }
+      free(utf8WrapLine);
+    }
+
+    free(line);
+    free(utf8Line);
+  }
+}
