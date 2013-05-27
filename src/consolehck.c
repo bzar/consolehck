@@ -74,10 +74,10 @@ void consolehckConsoleUpdate(consolehckConsole* console)
   glhckRenderClear(GLHCK_COLOR_BUFFER);
   glhckRenderClearColor(&previousClearColor);
 
-  glhckTextClear(console->text);
   glhckRect rect = {console->margin, console->margin, width - console->margin * 2, height - console->margin * 2};
   consolehckTextRenderUnicode(console->text, &rect, console->output.offset, CONSOLEHCK_WRAP, console->fontId, console->fontSize, console->output.text->data);
   glhckTextRender(console->text);
+  glhckTextClear(console->text);
 
   glhckObject* promptBackground = glhckPlaneNew(width, console->fontSize);
   glhckMaterial* promptBackgroundMaterial = glhckMaterialNew(NULL);
@@ -88,7 +88,6 @@ void consolehckConsoleUpdate(consolehckConsole* console)
   glhckObjectRender(promptBackground);
   glhckObjectFree(promptBackground);
 
-  glhckTextClear(console->text);
   float const inputY = height - console->margin;
   float promptRight;
 
@@ -105,6 +104,7 @@ void consolehckConsoleUpdate(consolehckConsole* console)
   free(utf8Input);
 
   glhckTextRender(console->text);
+  glhckTextClear(console->text);
 
   glhckRenderProjectionOnly(&previousProjection);
 
