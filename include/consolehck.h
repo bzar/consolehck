@@ -18,6 +18,7 @@ typedef struct consolehckStringBuffer {
 
 typedef struct consolehckTextArea {
   consolehckStringBuffer* text;
+  int offset;
 } consolehckTextArea;
 
 typedef struct consolehckInputLine {
@@ -50,6 +51,9 @@ void consolehckConsoleOutputUnicodeChar(consolehckConsole* console, unsigned int
 void consolehckConsoleOutputString(consolehckConsole* console, char const* c);
 void consolehckConsoleOutputUnicodeString(consolehckConsole* console, unsigned int const* c);
 
+void consolehckConsoleOutputOffset(consolehckConsole* console, int const offset);
+int consolehckConsoleOutputGetOffset(consolehckConsole* console);
+
 void consolehckConsoleInputClear(consolehckConsole* console);
 void consolehckConsoleInputChar(consolehckConsole* console, char const c);
 void consolehckConsoleInputUnicodeChar(consolehckConsole* console, unsigned int const c);
@@ -78,6 +82,6 @@ void consolehckStringBufferPushUnicodeString(consolehckStringBuffer* buffer, uns
 char consolehckStringBufferPopChar(consolehckStringBuffer* buffer);
 unsigned int consolehckStringBufferPopUnicodeChar(consolehckStringBuffer* buffer);
 
-void consolehckTextRenderUnicode(glhckText* textObject, glhckRect const* rect, consolehckWrapMode wrapMode, unsigned int fontId, unsigned int fontSize, unsigned int const* const str);
+void consolehckTextRenderUnicode(glhckText* textObject, glhckRect const* rect, int const offset, consolehckWrapMode wrapMode, unsigned int fontId, unsigned int fontSize, unsigned int const* const str);
 
 #endif

@@ -17,6 +17,7 @@ consolehckConsole* consolehckConsoleNew(float const width, float const height)
   console->input.input = consolehckStringBufferNew(128);
   console->input.prompt = consolehckStringBufferNew(16);
   console->output.text = consolehckStringBufferNew(1024);
+  console->output.offset = 0;
   console->inputCallbacks = NULL;
   console->numInputCallbacks = 0;
   console->object = glhckPlaneNew(width, height);
@@ -51,6 +52,7 @@ void consolehckConsoleFree(consolehckConsole* console)
 
 void consolehckConsoleUpdate(consolehckConsole* console)
 {
+
   glhckTexture* consoleTexture = glhckMaterialGetTexture(glhckObjectGetMaterial(console->object));
   int width, height;
   glhckTextureGetInformation(consoleTexture, NULL, &width, &height, NULL, NULL, NULL, NULL);
@@ -61,16 +63,30 @@ void consolehckConsoleUpdate(consolehckConsole* console)
 
   glhckFramebufferBegin(frameBuffer);
 
+  kmMat4 previousProjection = *glhckRenderGetProjection();
+
+  kmMat4 ortho;
+  kmMat4OrthographicProjection(&ortho, 0, width, 0, height, -1, 1);
+  glhckRenderProjectionOnly(&ortho);
+
   glhckColorb const previousClearColor = *glhckRenderGetClearColor();
   glhckRenderClearColorb(64, 64, 64, 255);
   glhckRenderClear(GLHCK_COLOR_BUFFER);
   glhckRenderClearColor(&previousClearColor);
 
   glhckTextClear(console->text);
-
   glhckRect rect = {console->margin, console->margin, width - console->margin * 2, height - console->margin * 2};
-  consolehckTextRenderUnicode(console->text, &rect, CONSOLEHCK_WRAP, console->fontId, console->fontSize, console->output.text->data);
+  consolehckTextRenderUnicode(console->text, &rect, console->output.offset, CONSOLEHCK_WRAP, console->fontId, console->fontSize, console->output.text->data);
+  glhckTextRender(console->text);
 
+  glhckObject* promptBackground = glhckPlaneNew(width, console->fontSize);
+  glhckMaterial* promptBackgroundMaterial = glhckMaterialNew(NULL);
+  glhckMaterialDiffuseb(promptBackgroundMaterial, 0, 0, 0, 255);
+  glhckObjectMaterial(promptBackground, promptBackgroundMaterial);
+  glhckObjectPositionf(promptBackground, width/2, console->fontSize/2 + console->margin, 0);
+  glhckObjectRender(promptBackground);
+
+  glhckTextClear(console->text);
   float const inputY = height - console->margin;
   float promptRight;
 
@@ -87,6 +103,8 @@ void consolehckConsoleUpdate(consolehckConsole* console)
   free(utf8Input);
 
   glhckTextRender(console->text);
+
+  glhckRenderProjectionOnly(&previousProjection);
 
   glhckFramebufferEnd(frameBuffer);
   glhckFramebufferFree(frameBuffer);
@@ -122,6 +140,18 @@ void consolehckConsoleOutputUnicodeString(consolehckConsole* console, unsigned i
 {
   consolehckStringBufferPushUnicodeString(console->output.text, c);
 }
+
+void consolehckConsoleOutputOffset(consolehckConsole* console, int const offset)
+{
+  console->output.offset = offset;
+}
+
+int consolehckConsoleOutputGetOffset(consolehckConsole *console)
+{
+  return console->output.offset;
+}
+
+
 
 void consolehckConsoleInputClear(consolehckConsole* console)
 {
@@ -312,17 +342,22 @@ unsigned int consolehckStringBufferPopUnicodeChar(consolehckStringBuffer* buffer
   return result;
 }
 
-void consolehckTextRenderUnicode(glhckText* textObject, glhckRect const* rect, consolehckWrapMode wrapMode, unsigned int fontId, unsigned int fontSize, unsigned int const* const str)
+void consolehckTextRenderUnicode(glhckText* textObject, glhckRect const* rect, int const offset, consolehckWrapMode wrapMode, unsigned int fontId, unsigned int fontSize, unsigned int const* const str)
 {
   /* Work through the character data backwards and find newline-separated lines.
    * For each line determine if wrapping is required. If no wrapping is required, render the line.
    * If wrapping is required, find the last non-rendered wrap-line within the line and render them
    * until the entire line is rendered.
    */
+
+  printf("OFFSET: %i\n", offset);
+  int const lineOffset = offset % (int) fontSize;
+  int const firstVisibleLine = offset / (int) fontSize + 1;
   unsigned int const numVisibleLines = rect->h / fontSize + 1;
   unsigned int lineStart = unicodeStringLength(str);
   unsigned int lineLength = 0;
-  unsigned int currentLine = 1;
+  int currentLine = 1;
+
   while(numVisibleLines > currentLine && lineStart > 0)
   {
     lineLength = 0;
@@ -357,9 +392,12 @@ void consolehckTextRenderUnicode(glhckText* textObject, glhckRect const* rect, c
     if(maxv.x <= rect->w || wrapMode == CONSOLEHCK_NO_WRAP)
     {
       // No wrapping required
-      float lineY = rect->h - currentLine * fontSize;
+      float lineY = rect->h - (currentLine - firstVisibleLine + 1) * fontSize + lineOffset;
 
-      glhckTextStash(textObject, fontId, fontSize, rect->x, rect->y + lineY, utf8Line, 0);
+      if(currentLine >= firstVisibleLine)
+      {
+        glhckTextStash(textObject, fontId, fontSize, rect->x, rect->y + lineY, utf8Line, 0);
+      }
       ++currentLine;
     }
     else
@@ -395,8 +433,11 @@ void consolehckTextRenderUnicode(glhckText* textObject, glhckRect const* rect, c
         }
 
         // Render wrap-line
-        float const lineY = rect->h - currentLine * fontSize;
-        glhckTextStash(textObject, fontId, fontSize, rect->x, rect->y + lineY, utf8WrapLine, NULL);
+        float const lineY = rect->h - (currentLine - firstVisibleLine + 1) * fontSize + lineOffset;
+        if(currentLine >= firstVisibleLine)
+        {
+          glhckTextStash(textObject, fontId, fontSize, rect->x, rect->y + lineY, utf8WrapLine, NULL);
+        }
         ++currentLine;
         lineLength -= wrapLineLength;
       }
@@ -407,3 +448,5 @@ void consolehckTextRenderUnicode(glhckText* textObject, glhckRect const* rect, c
     free(utf8Line);
   }
 }
+
+
