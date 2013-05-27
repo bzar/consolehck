@@ -207,7 +207,8 @@ void consolehckConsoleInputEnter(consolehckConsole* console)
   unsigned int i;
   for(i = 0; i < console->numInputCallbacks; ++i)
   {
-    (console->inputCallbacks[i])(console, console->input.input->data);
+    if((console->inputCallbacks[i])(console, console->input.input->data) == CONSOLEHCK_STOP)
+      break;
   }
 }
 

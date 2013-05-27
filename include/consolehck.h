@@ -4,7 +4,13 @@
 #include "glhck/glhck.h"
 
 struct consolehckConsole;
-typedef void (* consolehckInputCallback)(struct consolehckConsole*, unsigned int const*);
+
+typedef enum consolehckContinue {
+  CONSOLEHCK_CONTINUE, CONSOLEHCK_STOP
+} consolehckContinue;
+
+// Console input callback signature
+typedef consolehckContinue (* consolehckInputCallback)(struct consolehckConsole*, unsigned int const*);
 
 typedef enum consolehckWrapMode {
   CONSOLEHCK_NO_WRAP, CONSOLEHCK_WRAP
