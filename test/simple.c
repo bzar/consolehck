@@ -35,12 +35,12 @@ static void windowKeyCallback(GLFWwindow* w, int key, int action)
   }
   else if(key == GLFW_KEY_UP && (action == GLFW_PRESS || action == GLFW_REPEAT))
   {
-    consolehckConsoleOutputOffset(console, consolehckConsoleOutputGetOffset(console) + 2);
+    consolehckConsoleOutputOffset(console, consolehckConsoleOutputGetOffset(console) + 12);
     consolehckConsoleUpdate(console);
   }
   else if(key == GLFW_KEY_DOWN && (action == GLFW_PRESS || action == GLFW_REPEAT))
   {
-    consolehckConsoleOutputOffset(console, consolehckConsoleOutputGetOffset(console) - 2);
+    consolehckConsoleOutputOffset(console, consolehckConsoleOutputGetOffset(console) - 12);
     consolehckConsoleUpdate(console);
   }
 }
@@ -110,10 +110,6 @@ void run(GLFWwindow* window)
 
   while(RUNNING && glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS)
   {
-    int offset = sin(glfwGetTime()) * 50;
-
-    //consolehckConsoleOutputOffset(console, offset);
-    //consolehckConsoleUpdate(console);
     glfwPollEvents();
     glhckObjectRender(console->object);
     glfwSwapBuffers(window);

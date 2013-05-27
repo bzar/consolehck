@@ -22,7 +22,7 @@ consolehckConsole* consolehckConsoleNew(float const width, float const height)
   console->numInputCallbacks = 0;
   console->object = glhckPlaneNew(width, height);
 
-  glhckTexture* consoleTexture = glhckTextureNew(NULL, NULL, NULL);
+  glhckTexture* consoleTexture = glhckTextureNew();
   glhckTextureCreate(consoleTexture, GLHCK_TEXTURE_2D, 0, width, height, 0, 0, GLHCK_RGBA, GLHCK_DATA_UNSIGNED_BYTE, 0, NULL);
   glhckTextureParameter(consoleTexture, glhckTextureDefaultParameters());
   glhckMaterial* consoleMaterial = glhckMaterialNew(consoleTexture);
@@ -33,7 +33,7 @@ consolehckConsole* consolehckConsoleNew(float const width, float const height)
   console->text = glhckTextNew(1024,1024);
   glhckTextColorb(console->text, 192, 192, 192, 255);
   console->fontSize = 14;
-  console->fontId = glhckTextNewFontKakwafont(console->text, &console->fontSize);
+  console->fontId = glhckTextFontNewKakwafont(console->text, &console->fontSize);
   console->margin = 4;
 
   return console;
@@ -83,8 +83,10 @@ void consolehckConsoleUpdate(consolehckConsole* console)
   glhckMaterial* promptBackgroundMaterial = glhckMaterialNew(NULL);
   glhckMaterialDiffuseb(promptBackgroundMaterial, 0, 0, 0, 255);
   glhckObjectMaterial(promptBackground, promptBackgroundMaterial);
+  glhckMaterialFree(promptBackgroundMaterial);
   glhckObjectPositionf(promptBackground, width/2, console->fontSize/2 + console->margin, 0);
   glhckObjectRender(promptBackground);
+  glhckObjectFree(promptBackground);
 
   glhckTextClear(console->text);
   float const inputY = height - console->margin;
@@ -112,7 +114,7 @@ void consolehckConsoleUpdate(consolehckConsole* console)
 
 void consolehckConsoleFont(consolehckConsole* console, char const* filename)
 {
-  console->fontId = glhckTextNewFont(console->text, filename);
+  console->fontId = glhckTextFontNew(console->text, filename);
 }
 
 void consolehckConsoleFontSize(consolehckConsole* console, unsigned int const fontSize)
@@ -350,7 +352,6 @@ void consolehckTextRenderUnicode(glhckText* textObject, glhckRect const* rect, i
    * until the entire line is rendered.
    */
 
-  printf("OFFSET: %i\n", offset);
   int const lineOffset = offset % (int) fontSize;
   int const firstVisibleLine = offset / (int) fontSize + 1;
   unsigned int const numVisibleLines = rect->h / fontSize + 1;
