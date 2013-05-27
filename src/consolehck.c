@@ -298,6 +298,7 @@ void consolehckStringBufferPushString(consolehckStringBuffer* buffer, char const
   utf8DecodeString(c, codepoints);
   codepoints[numCodepoints] = 0;
   consolehckStringBufferPushUnicodeString(buffer, codepoints);
+  free(codepoints);
 }
 
 void consolehckStringBufferPushUnicodeString(consolehckStringBuffer* buffer, unsigned int const* c)
