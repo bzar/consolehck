@@ -3,6 +3,10 @@
 
 #include "glhck/glhck.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 struct consolehckConsole;
 
 typedef enum consolehckContinue {
@@ -89,5 +93,9 @@ char consolehckStringBufferPopChar(consolehckStringBuffer* buffer);
 unsigned int consolehckStringBufferPopUnicodeChar(consolehckStringBuffer* buffer);
 
 void consolehckTextRenderUnicode(glhckText* textObject, glhckRect const* rect, int const offset, consolehckWrapMode wrapMode, unsigned int fontId, unsigned int fontSize, unsigned int const* const str);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

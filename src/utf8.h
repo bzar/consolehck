@@ -26,6 +26,10 @@ freely, subject to the following restrictions:
 #ifndef __UTF8_H__
 #define	__UTF8_H__
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define			UTF8_REPLACEMENT_CHAR		0xFFFD
 #define			UTF8_CHAR_LIMIT			0x10FFFF
 
@@ -52,5 +56,9 @@ int unicodeStringLength(unsigned int const* codepoints);
 int utf8EncodedStringLength(unsigned int const* codepoints);
 void utf8EncodeString(unsigned int const* codepoints, char* result);
 void utf8DecodeString(char const* chars, unsigned int* result);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif

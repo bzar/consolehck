@@ -89,36 +89,42 @@ void consolehckConsoleUpdate(consolehckConsole* console)
   glhckObjectFree(promptBackground);
 
   float const inputY = height - console->margin;
-  float promptRight;
+  float promptRight = 0.0f;
 
-  int utf8PromptLength = utf8EncodedStringLength(console->input.prompt->data);
-  char* utf8Prompt = calloc(utf8PromptLength + 1, 1);
-  utf8EncodeString(console->input.prompt->data, utf8Prompt);
-  glhckTextStash(console->text, console->fontId, console->fontSize, console->margin, inputY, utf8Prompt, &promptRight);
-  free(utf8Prompt);
-
-  unsigned int visibleGlyphs = console->input.input->length;
-  unsigned int* inputUnicode = calloc(visibleGlyphs + 1, sizeof(unsigned int));
-  memcpy(inputUnicode, console->input.input->data, visibleGlyphs * sizeof(unsigned int));
-  int utf8InputLength = utf8EncodedStringLength(inputUnicode);
-  char* utf8Input = calloc(utf8InputLength + 1, 1);
-  utf8EncodeString(inputUnicode, utf8Input);
-
-  kmVec2 minv, maxv;
-  glhckTextGetMinMax(console->text, console->fontId, console->fontSize, utf8Input, &minv, &maxv);
-
-  unsigned int* inputLineStart = inputUnicode;
-  while(maxv.x > width - promptRight && *inputLineStart != 0)
+  if(console->input.prompt->length > 0)
   {
-    ++inputLineStart;
-    memset(utf8Input, 0, utf8InputLength);
-    utf8EncodeString(inputLineStart, utf8Input);
-    glhckTextGetMinMax(console->text, console->fontId, console->fontSize, utf8Input, &minv, &maxv);
+    int utf8PromptLength = utf8EncodedStringLength(console->input.prompt->data);
+    char* utf8Prompt = calloc(utf8PromptLength + 1, 1);
+    utf8EncodeString(console->input.prompt->data, utf8Prompt);
+    glhckTextStash(console->text, console->fontId, console->fontSize, console->margin, inputY, utf8Prompt, &promptRight);
+    free(utf8Prompt);
   }
 
-  glhckTextStash(console->text, console->fontId, console->fontSize, promptRight, inputY, utf8Input, NULL);
-  free(inputUnicode);
-  free(utf8Input);
+  if(console->input.input->length > 0)
+  {
+    unsigned int visibleGlyphs = console->input.input->length;
+    unsigned int* inputUnicode = calloc(visibleGlyphs + 1, sizeof(unsigned int));
+    memcpy(inputUnicode, console->input.input->data, visibleGlyphs * sizeof(unsigned int));
+    int utf8InputLength = utf8EncodedStringLength(inputUnicode);
+    char* utf8Input = calloc(utf8InputLength + 1, 1);
+    utf8EncodeString(inputUnicode, utf8Input);
+
+    kmVec2 minv, maxv;
+    glhckTextGetMinMax(console->text, console->fontId, console->fontSize, utf8Input, &minv, &maxv);
+
+    unsigned int* inputLineStart = inputUnicode;
+    while(maxv.x > width - promptRight && *inputLineStart != 0)
+    {
+      ++inputLineStart;
+      memset(utf8Input, 0, utf8InputLength);
+      utf8EncodeString(inputLineStart, utf8Input);
+      glhckTextGetMinMax(console->text, console->fontId, console->fontSize, utf8Input, &minv, &maxv);
+    }
+
+    glhckTextStash(console->text, console->fontId, console->fontSize, promptRight, inputY, utf8Input, NULL);
+    free(inputUnicode);
+    free(utf8Input);
+  }
 
   glhckTextRender(console->text);
   glhckTextClear(console->text);
