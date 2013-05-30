@@ -106,9 +106,7 @@ void run(GLFWwindow* window)
   consolehckConsoleOutputChar(console, '\n');
   consolehckConsoleUpdate(console);
 
-  kmMat4 ortho;
-  kmMat4OrthographicProjection(&ortho, 0, WIDTH, 0, HEIGHT, -1, 1);
-  glhckRenderProjectionOnly(&ortho);
+  glhckRenderStatePush2D(WIDTH, HEIGHT, -1, 1);
 
   while(RUNNING && glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS)
   {
