@@ -1,5 +1,5 @@
 #include "consolehck.h"
-#include "GL/glfw3.h"
+#include "GLFW/glfw3.h"
 
 #include <stdio.h>
 
@@ -20,7 +20,7 @@ static void windowCharCallback(GLFWwindow* w, unsigned int c)
   consolehckConsoleUpdate(console);
 }
 
-static void windowKeyCallback(GLFWwindow* w, int key, int action)
+static void windowKeyCallback(GLFWwindow* w, int key, int scancode, int action, int mods)
 {
   consolehckConsole* console = glfwGetWindowUserPointer(w);
   if(key == GLFW_KEY_ENTER && action == GLFW_PRESS)
