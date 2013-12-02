@@ -48,7 +48,7 @@ int utf8Encode(unsigned int ch, char *str_s, int buf_len);
 // Copyright (c) 2008-2009 Bjoern Hoehrmann <bjoern@hoehrmann.de>
 
 // See http://bjoern.hoehrmann.de/utf-8/decoder/dfa/ for details.
-unsigned int inline utf8Decode(unsigned int* state, unsigned int* codep, unsigned int byte);
+unsigned int utf8Decode(unsigned int* state, unsigned int* codep, unsigned int byte);
 int utf8CountCodePoints(unsigned char const* s, int* count);
 
 // Added 2013 by Teemu Erkkola, public domain

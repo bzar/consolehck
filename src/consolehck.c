@@ -33,7 +33,7 @@ consolehckConsole* consolehckConsoleNew(float const width, float const height)
   console->text = glhckTextNew(1024,1024);
   glhckTextColorb(console->text, 192, 192, 192, 255);
   console->fontSize = 14;
-  console->fontId = glhckTextFontNewKakwafont(console->text, &console->fontSize);
+  console->fontId = glhckTextFontNewKakwafont(console->text, (int*)&console->fontSize);
   console->margin = 4;
 
   return console;
@@ -317,7 +317,7 @@ void consolehckStringBufferPushUnicodeChar(consolehckStringBuffer* buffer, unsig
 void consolehckStringBufferPushString(consolehckStringBuffer* buffer, char const* c)
 {
   int numCodepoints;
-  utf8CountCodePoints(c, &numCodepoints);
+  utf8CountCodePoints((unsigned char*)c, &numCodepoints);
   unsigned int* codepoints = calloc(numCodepoints + 1, sizeof(unsigned int));
   utf8DecodeString(c, codepoints);
   codepoints[numCodepoints] = 0;

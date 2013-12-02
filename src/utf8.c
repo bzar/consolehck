@@ -199,7 +199,7 @@ static const unsigned char utf8d[] = {
   1,3,1,1,1,1,1,3,1,3,1,1,1,1,1,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1,1,1, // s7..s8
 };
 
-unsigned int inline utf8Decode(unsigned int* state, unsigned int* codep, unsigned int byte) {
+unsigned int utf8Decode(unsigned int* state, unsigned int* codep, unsigned int byte) {
   unsigned int type = utf8d[byte];
 
   *codep = (*state != UTF8_ACCEPT) ?
