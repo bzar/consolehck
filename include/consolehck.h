@@ -72,8 +72,8 @@ void consolehckConsoleInputUnicodeString(consolehckConsole* console, unsigned in
 char consolehckConsoleInputPopChar(consolehckConsole* console);
 unsigned int consolehckConsoleInputPopUnicodeChar(consolehckConsole* console);
 
-void consolehckConsolePropmt(consolehckConsole* console, char const* c);
-void consolehckConsolePropmtUnicode(consolehckConsole* console, unsigned int const* c);
+void consolehckConsoleInputPrompt(consolehckConsole* console, char const* c);
+void consolehckConsoleInputPromptUnicode(consolehckConsole* console, unsigned int const* c);
 
 void consolehckConsoleInputEnter(consolehckConsole* console);
 void consolehckConsoleInputCallbackRegister(consolehckConsole* console, consolehckInputCallback callback);

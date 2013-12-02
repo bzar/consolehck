@@ -98,7 +98,7 @@ void run(GLFWwindow* window)
 
   glhckObjectPositionf(console->object, WIDTH/2.0f, HEIGHT/2.0f, 0);
 
-  consolehckConsoleInputPropmt(console, "consolehck>");
+  consolehckConsoleInputPrompt(console, "consolehck>");
   consolehckConsoleInputString(console, "Hello Input!");
   consolehckConsoleOutputString(console, "1 Hello Output!\n");
   consolehckConsoleOutputString(console, "2 Hello Output!\n3 Hello Output!\n");

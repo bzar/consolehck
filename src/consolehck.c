@@ -213,13 +213,13 @@ unsigned int consolehckConsoleInputPopUnicodeChar(consolehckConsole* console)
   return consolehckStringBufferPopUnicodeChar(console->input.input);
 }
 
-void consolehckConsoleInputPropmt(consolehckConsole* console, char const* c)
+void consolehckConsoleInputPrompt(consolehckConsole* console, char const* c)
 {
   consolehckStringBufferClear(console->input.prompt);
   consolehckStringBufferPushString(console->input.prompt, c);
 }
 
-void consolehckConsolePropmtUnicode(consolehckConsole* console, unsigned int const* c)
+void consolehckConsolePromptUnicode(consolehckConsole* console, unsigned int const* c)
 {
   consolehckStringBufferClear(console->input.prompt);
   consolehckStringBufferPushUnicodeString(console->input.prompt, c);
