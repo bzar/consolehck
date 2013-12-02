@@ -3,6 +3,10 @@
 
 #include <stdio.h>
 
+#if EMSCRIPTEN
+# include <emscripten/emscripten.h>
+#endif
+
 int const WIDTH = 800;
 int const HEIGHT = 480;
 
@@ -56,12 +60,13 @@ static consolehckContinue inputEnterCallback(consolehckConsole* console, unsigne
 }
 
 static char const* const LOREM_IPSUM = "Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+static GLFWwindow* window;
+static consolehckConsole* console;
 
 void run(GLFWwindow* window);
 
 int main(int argc, char** argv)
 {
-  GLFWwindow* window;
   if (!glfwInit())
      return -1;
 
@@ -87,9 +92,23 @@ int main(int argc, char** argv)
   return 0;
 }
 
+#if EMSCRIPTEN
+static void mainloop(void)
+{
+  glfwPollEvents();
+  glhckObjectRender(console->object);
+  glfwSwapBuffers(window);
+  glhckRenderClear(GLHCK_DEPTH_BUFFER_BIT | GLHCK_COLOR_BUFFER_BIT);
+
+  if (!RUNNING || glfwGetKey(window, GLFW_KEY_ESCAPE)) {
+    emscripten_cancel_main_loop();
+  }
+}
+#endif
+
 void run(GLFWwindow* window)
 {
-  consolehckConsole* console = consolehckConsoleNew(512, 256);
+  console = consolehckConsoleNew(512, 256);
   glfwSetWindowUserPointer(window, console);
   glfwSetWindowCloseCallback(window, windowCloseCallback);
   glfwSetCharCallback(window, windowCharCallback);
@@ -108,13 +127,17 @@ void run(GLFWwindow* window)
 
   glhckRenderStatePush2D(WIDTH, HEIGHT, -1, 1);
 
+#if EMSCRIPTEN
+  emscripten_set_main_loop(mainloop, 0, 1);
+#else
   while(RUNNING && glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS)
   {
     glfwPollEvents();
     glhckObjectRender(console->object);
     glfwSwapBuffers(window);
-    glhckRenderClear(GLHCK_DEPTH_BUFFER | GLHCK_COLOR_BUFFER);
+    glhckRenderClear(GLHCK_DEPTH_BUFFER_BIT | GLHCK_COLOR_BUFFER_BIT);
   }
+#endif
 
   consolehckConsoleFree(console);
 }

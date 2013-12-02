@@ -23,7 +23,7 @@ consolehckConsole* consolehckConsoleNew(float const width, float const height)
   console->object = glhckPlaneNew(width, height);
 
   glhckTexture* consoleTexture = glhckTextureNew();
-  glhckTextureCreate(consoleTexture, GLHCK_TEXTURE_2D, 0, width, height, 0, 0, GLHCK_RGBA, GLHCK_DATA_UNSIGNED_BYTE, 0, NULL);
+  glhckTextureCreate(consoleTexture, GLHCK_TEXTURE_2D, 0, width, height, 0, 0, GLHCK_RGBA, GLHCK_UNSIGNED_BYTE, 0, NULL);
   glhckTextureParameter(consoleTexture, glhckTextureDefaultParameters());
   glhckMaterial* consoleMaterial = glhckMaterialNew(consoleTexture);
   glhckTextureFree(consoleTexture);
@@ -71,7 +71,7 @@ void consolehckConsoleUpdate(consolehckConsole* console)
 
   glhckColorb const previousClearColor = *glhckRenderGetClearColor();
   glhckRenderClearColorb(64, 64, 64, 255);
-  glhckRenderClear(GLHCK_COLOR_BUFFER);
+  glhckRenderClear(GLHCK_COLOR_BUFFER_BIT);
   glhckRenderClearColor(&previousClearColor);
 
   glhckRect rect = {console->margin, console->margin, width - console->margin * 2, height - console->margin * 2};
