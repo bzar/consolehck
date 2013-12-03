@@ -23,7 +23,7 @@ consolehckConsole* consolehckConsoleNew(float const width, float const height)
   console->object = glhckPlaneNew(width, height);
 
   glhckTexture* consoleTexture = glhckTextureNew();
-  glhckTextureCreate(consoleTexture, GLHCK_TEXTURE_2D, 0, width, height, 0, 0, GLHCK_RGBA, GLHCK_DATA_UNSIGNED_BYTE, 0, NULL);
+  glhckTextureCreate(consoleTexture, GLHCK_TEXTURE_2D, 0, width, height, 0, 0, GLHCK_RGBA, GLHCK_UNSIGNED_BYTE, 0, NULL);
   glhckTextureParameter(consoleTexture, glhckTextureDefaultParameters());
   glhckMaterial* consoleMaterial = glhckMaterialNew(consoleTexture);
   glhckTextureFree(consoleTexture);
@@ -33,7 +33,7 @@ consolehckConsole* consolehckConsoleNew(float const width, float const height)
   console->text = glhckTextNew(1024,1024);
   glhckTextColorb(console->text, 192, 192, 192, 255);
   console->fontSize = 14;
-  console->fontId = glhckTextFontNewKakwafont(console->text, &console->fontSize);
+  console->fontId = glhckTextFontNewKakwafont(console->text, (int*)&console->fontSize);
   console->margin = 4;
 
   return console;
@@ -71,7 +71,7 @@ void consolehckConsoleUpdate(consolehckConsole* console)
 
   glhckColorb const previousClearColor = *glhckRenderGetClearColor();
   glhckRenderClearColorb(64, 64, 64, 255);
-  glhckRenderClear(GLHCK_COLOR_BUFFER);
+  glhckRenderClear(GLHCK_COLOR_BUFFER_BIT);
   glhckRenderClearColor(&previousClearColor);
 
   glhckRect rect = {console->margin, console->margin, width - console->margin * 2, height - console->margin * 2};
@@ -213,13 +213,13 @@ unsigned int consolehckConsoleInputPopUnicodeChar(consolehckConsole* console)
   return consolehckStringBufferPopUnicodeChar(console->input.input);
 }
 
-void consolehckConsoleInputPropmt(consolehckConsole* console, char const* c)
+void consolehckConsoleInputPrompt(consolehckConsole* console, char const* c)
 {
   consolehckStringBufferClear(console->input.prompt);
   consolehckStringBufferPushString(console->input.prompt, c);
 }
 
-void consolehckConsolePropmtUnicode(consolehckConsole* console, unsigned int const* c)
+void consolehckConsolePromptUnicode(consolehckConsole* console, unsigned int const* c)
 {
   consolehckStringBufferClear(console->input.prompt);
   consolehckStringBufferPushUnicodeString(console->input.prompt, c);
@@ -317,7 +317,7 @@ void consolehckStringBufferPushUnicodeChar(consolehckStringBuffer* buffer, unsig
 void consolehckStringBufferPushString(consolehckStringBuffer* buffer, char const* c)
 {
   int numCodepoints;
-  utf8CountCodePoints(c, &numCodepoints);
+  utf8CountCodePoints((unsigned char*)c, &numCodepoints);
   unsigned int* codepoints = calloc(numCodepoints + 1, sizeof(unsigned int));
   utf8DecodeString(c, codepoints);
   codepoints[numCodepoints] = 0;
